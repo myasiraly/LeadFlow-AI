@@ -1,0 +1,7 @@
+{
+  "name": "LeadGen AI Scraper",
+  "description": "An all-in-one lead generation platform using Google Gemini API to extract and verify prospects from various sources like Google Maps, Apollo, and social platforms.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
