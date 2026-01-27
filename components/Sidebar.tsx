@@ -19,8 +19,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTool, onToolSelect }) => {
             </svg>
           </div>
           <div>
-            <h1 className="text-xl font-extrabold text-gray-900 tracking-tight leading-none">LeadFlow</h1>
-            <p className="text-[10px] text-indigo-500 font-bold uppercase tracking-widest mt-1">Intelligence</p>
+            <h1 className="text-xl font-extrabold text-gray-900 tracking-tight leading-none">LeadGen AI</h1>
+            <p className="text-[10px] text-indigo-500 font-bold uppercase tracking-widest mt-1">Instant Prospect Lists</p>
           </div>
         </div>
       </div>
