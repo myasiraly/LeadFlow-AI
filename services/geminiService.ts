@@ -4,21 +4,23 @@ import { ToolType, Lead } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-export async function scrapeLeads(tool: ToolType, input: string): Promise<Lead[]> {
+export async function scrapeLeads(tool: ToolType, input: string, batchIndex: number = 0): Promise<Lead[]> {
   const prompt = `
-    You are an expert high-volume lead generation and web intelligence agent.
-    Task: Extract or find potential leads based on the user's input for the service: ${tool}.
-    Input provided: "${input}"
+    You are an elite, high-capacity lead generation engine (Batch #${batchIndex + 1}).
+    Task: Conduct an exhaustive extraction of unique leads for: ${tool}.
+    Input Query/Source: "${input}"
     
-    Goal: MAXIMIZE RESULTS. Provide a comprehensive list of up to 50 high-quality leads.
+    CRITICAL INSTRUCTION: 
+    - Provide a batch of 50-70 HIGHLY UNIQUE leads.
+    - Since this is batch #${batchIndex + 1}, ensure these leads are DIFFERENT from previous batches.
+    - Focus on different segments, geographical sub-areas, or alphabetized clusters related to the input.
+    - If the input is a URL, simulate a deep crawl of page ${batchIndex + 1}.
     
-    If the input is a URL, simulate a deep, multi-page crawl of that platform.
-    If the input is a query (like "plumbers in LA"), use your search capabilities and internal dataset to generate the largest possible verified sample list.
+    Requirements:
+    - Provide realistic but simulated data including Name, Company, verified-style Email, Phone, and precise Location.
+    - Return ONLY a valid JSON array of objects.
     
-    For each lead, ensure details like 'email' and 'phone' follow realistic business patterns. 
-    Focus on accuracy for 'company', 'website', and 'industry'.
-    
-    Respond in JSON format ONLY, as a flat array of objects.
+    Response format: JSON array only.
   `;
 
   const response = await ai.models.generateContent({
@@ -43,7 +45,7 @@ export async function scrapeLeads(tool: ToolType, input: string): Promise<Lead[]
             industry: { type: Type.STRING },
             source: { type: Type.STRING }
           },
-          required: ["id", "name"]
+          required: ["id", "name", "email"]
         }
       }
     }
@@ -52,10 +54,9 @@ export async function scrapeLeads(tool: ToolType, input: string): Promise<Lead[]
   try {
     const text = response.text.trim();
     const data = JSON.parse(text);
-    return data;
+    return Array.isArray(data) ? data : [];
   } catch (error) {
-    console.error("Failed to parse Gemini response:", error);
-    // Return a smaller hardcoded sample if parsing fails as a fallback
+    console.error(`Batch ${batchIndex} failed:`, error);
     return [];
   }
 }
