@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import Sidebar from './components/Sidebar';
 import DataTable from './components/DataTable';
@@ -9,7 +8,7 @@ import { downloadLeadsCSV } from './utils/csv';
 
 const ITEMS_PER_PAGE = 12;
 const TARGET_LEADS = 1000;
-const MAX_BATCHES = 15; // To prevent infinite loops if model repeats
+const MAX_BATCHES = 15;
 
 const App: React.FC = () => {
   const [activeToolId, setActiveToolId] = useState<ToolType>(ToolType.APOLLO);
@@ -38,7 +37,6 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [isLoading]);
 
-  // Table state
   const [filterText, setFilterText] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -66,7 +64,6 @@ const App: React.FC = () => {
 
         const batch = await scrapeLeads(activeToolId, inputValue, i);
         
-        // De-duplicate against existing batch
         const uniqueInBatch = batch.filter(lead => {
           const email = lead.email?.toLowerCase();
           if (email && !seenEmails.has(email)) {
@@ -77,12 +74,11 @@ const App: React.FC = () => {
         });
 
         if (uniqueInBatch.length === 0 && i > 2) {
-            // If we get zero new leads in a batch, the model is likely exhausted
             break;
         }
 
         accumulatedLeads = [...accumulatedLeads, ...uniqueInBatch];
-        setLeads([...accumulatedLeads]); // Functional update to show growth in UI
+        setLeads([...accumulatedLeads]);
       }
     } catch (err: any) {
       console.error(err);
@@ -172,8 +168,6 @@ const App: React.FC = () => {
 
         <div className="flex-1 p-12">
           <div className="max-w-7xl mx-auto space-y-10">
-            
-            {/* Massive Hero Scraper Section */}
             <section className="bg-white rounded-[2.5rem] shadow-2xl shadow-indigo-100/30 border border-gray-100 p-10 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1.5 bg-gray-50">
                 <div 
@@ -256,7 +250,6 @@ const App: React.FC = () => {
               </div>
             )}
 
-            {/* Live Data Feed */}
             <div className="space-y-6">
               <div className="flex items-center justify-between px-4">
                 <div className="flex items-center gap-3">
