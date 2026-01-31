@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { ToolType, ToolConfig } from '../types';
+import { ToolType } from '../types';
 import { TOOLS } from '../constants';
 
 interface SidebarProps {
@@ -54,7 +53,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTool, onToolSelect }) => {
         </div>
       </nav>
 
-      <div className="p-6 mt-auto">
+      <div className="p-6 mt-auto space-y-4">
         <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-[10px] font-bold shadow-sm">

@@ -18,7 +18,7 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loadingStep, setLoadingStep] = useState(0);
   const abortControllerRef = useRef<boolean>(false);
-  
+
   const loadingSteps = [
     "Spinning up High-Volume Cluster...",
     "Crawling Deep Directories...",
@@ -35,7 +35,7 @@ const App: React.FC = () => {
       }, 2000);
     }
     return () => clearInterval(interval);
-  }, [isLoading]);
+  }, [isLoading, loadingSteps.length]);
 
   const [filterText, setFilterText] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
