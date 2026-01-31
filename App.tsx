@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import Sidebar from './components/Sidebar';
 import DataTable from './components/DataTable';
@@ -8,7 +9,7 @@ import { downloadLeadsCSV } from './utils/csv';
 
 const ITEMS_PER_PAGE = 12;
 const TARGET_LEADS = 1000;
-const MAX_BATCHES = 15;
+const MAX_BATCHES = 25; // Increased to ensure we hit 1000 even with some duplicates
 
 const App: React.FC = () => {
   const [activeToolId, setActiveToolId] = useState<ToolType>(ToolType.APOLLO);
@@ -17,14 +18,17 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadingStep, setLoadingStep] = useState(0);
+  const [currentBatch, setCurrentBatch] = useState(0);
   const abortControllerRef = useRef<boolean>(false);
-
+  
   const loadingSteps = [
     "Spinning up High-Volume Cluster...",
     "Crawling Deep Directories...",
     "Aggregating Global Prospects...",
     "Validating Verified Emails...",
-    "Compiling Massive Intelligence Table..."
+    "Compiling Massive Intelligence Table...",
+    "Searching for Niche Segments...",
+    "Deduplicating Global Results..."
   ];
 
   useEffect(() => {
@@ -34,9 +38,13 @@ const App: React.FC = () => {
         setLoadingStep(s => (s < loadingSteps.length - 1 ? s + 1 : 0));
       }, 2000);
     }
-    return () => clearInterval(interval);
-  }, [isLoading, loadingSteps.length]);
+    return () => {
+      clearInterval(interval);
+      setLoadingStep(0);
+    };
+  }, [isLoading]);
 
+  // Table state
   const [filterText, setFilterText] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -52,6 +60,7 @@ const App: React.FC = () => {
     setLeads([]);
     setFilterText('');
     setCurrentPage(1);
+    setCurrentBatch(0);
     abortControllerRef.current = false;
 
     let accumulatedLeads: Lead[] = [];
@@ -62,10 +71,12 @@ const App: React.FC = () => {
         if (abortControllerRef.current) break;
         if (accumulatedLeads.length >= TARGET_LEADS) break;
 
+        setCurrentBatch(i + 1);
         const batch = await scrapeLeads(activeToolId, inputValue, i);
         
+        // De-duplicate against existing set
         const uniqueInBatch = batch.filter(lead => {
-          const email = lead.email?.toLowerCase();
+          const email = lead.email?.toLowerCase().trim();
           if (email && !seenEmails.has(email)) {
             seenEmails.add(email);
             return true;
@@ -73,18 +84,24 @@ const App: React.FC = () => {
           return false;
         });
 
-        if (uniqueInBatch.length === 0 && i > 2) {
+        // Even if batch is small, we keep going until target or max batches
+        accumulatedLeads = [...accumulatedLeads, ...uniqueInBatch];
+        setLeads([...accumulatedLeads]);
+
+        // Break early only if multiple batches return absolutely nothing (dead end)
+        if (uniqueInBatch.length === 0 && i > 5) {
             break;
         }
 
-        accumulatedLeads = [...accumulatedLeads, ...uniqueInBatch];
-        setLeads([...accumulatedLeads]);
+        // Small cooling delay to prevent rate limit issues on rapid batching
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
     } catch (err: any) {
       console.error(err);
-      setError('Extraction interrupted. Saving progress...');
+      setError('Bulk extraction paused or interrupted. You can export the leads found so far.');
     } finally {
       setIsLoading(false);
+      setCurrentBatch(0);
     }
   }, [activeToolId, inputValue]);
 
@@ -94,7 +111,7 @@ const App: React.FC = () => {
   };
 
   const handleDownload = () => {
-    downloadLeadsCSV(leads, `${activeToolId.toLowerCase().replace(/\s/g, '_')}_bulk_1000.csv`);
+    downloadLeadsCSV(leads, `${activeToolId.toLowerCase().replace(/\s/g, '_')}_bulk_1000_export.csv`);
   };
 
   const filteredLeads = useMemo(() => {
@@ -121,6 +138,7 @@ const App: React.FC = () => {
       <Sidebar 
         activeTool={activeToolId} 
         onToolSelect={(id) => {
+          if (isLoading) return; // Prevent tool switching during bulk run
           setActiveToolId(id);
           setInputValue('');
           setLeads([]);
@@ -139,7 +157,9 @@ const App: React.FC = () => {
                 <h2 className="text-2xl font-black text-gray-900 tracking-tight">{activeTool.id}</h2>
                 <div className="flex items-center gap-2 mt-1">
                   <span className={`w-2 h-2 rounded-full ${isLoading ? 'bg-indigo-500 animate-pulse' : 'bg-green-500'}`} />
-                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.1em]">Target: {TARGET_LEADS} Unique Prospects</p>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.1em]">
+                    {isLoading ? `Processing Batch ${currentBatch}` : `Target: ${TARGET_LEADS} Verified Prospects`}
+                  </p>
                 </div>
               </div>
             </div>
@@ -148,7 +168,7 @@ const App: React.FC = () => {
               {leads.length > 0 && (
                 <>
                   <div className="hidden lg:block text-right">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Database Size</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Live Database</p>
                     <p className="text-xl font-black text-indigo-600 leading-none">{leads.length.toLocaleString()}</p>
                   </div>
                   <button
@@ -158,7 +178,7 @@ const App: React.FC = () => {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
-                    Export {leads.length} leads
+                    Export {leads.length} Leads
                   </button>
                 </>
               )}
@@ -168,10 +188,12 @@ const App: React.FC = () => {
 
         <div className="flex-1 p-12">
           <div className="max-w-7xl mx-auto space-y-10">
+            
+            {/* Massive Hero Scraper Section */}
             <section className="bg-white rounded-[2.5rem] shadow-2xl shadow-indigo-100/30 border border-gray-100 p-10 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1.5 bg-gray-50">
+              <div className="absolute top-0 left-0 w-full h-2 bg-gray-50">
                 <div 
-                  className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-700 ease-out"
                   style={{ width: `${progressPercentage}%` }}
                 />
               </div>
@@ -179,13 +201,16 @@ const App: React.FC = () => {
               <div className="flex flex-col space-y-8">
                 <div className="flex items-center justify-between">
                   <div className="max-w-xl">
-                    <h3 className="text-xl font-black text-gray-900 mb-2">Bulk Lead Discovery Engine</h3>
-                    <p className="text-gray-500 text-sm font-medium">Extracting up to 1000 leads via iterative scraping. This may take a minute as Gemini 3 crawls through multiple data layers.</p>
+                    <h3 className="text-xl font-black text-gray-900 mb-2">Massive Lead Discovery Engine</h3>
+                    <p className="text-gray-500 text-sm font-medium">Extracting up to {TARGET_LEADS} leads via multi-batch intelligent scraping. Our engine performs ${MAX_BATCHES} distinct search cycles for total coverage.</p>
                   </div>
                   {isLoading && (
-                    <div className="bg-indigo-50 px-4 py-2 rounded-xl flex items-center gap-3">
+                    <div className="bg-indigo-50 px-5 py-2.5 rounded-2xl flex items-center gap-3 border border-indigo-100 shadow-sm">
                       <div className="w-4 h-4 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin" />
-                      <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider">Scraping in progress...</span>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-indigo-700 uppercase tracking-widest leading-none">Batch {currentBatch} of {MAX_BATCHES}</span>
+                        <span className="text-[9px] text-indigo-400 font-bold uppercase mt-1">Collecting Results...</span>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -208,14 +233,14 @@ const App: React.FC = () => {
                       disabled={!inputValue.trim()}
                       className="px-10 py-5 rounded-2xl font-black text-sm bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-200 active:scale-95 transition-all disabled:bg-gray-200"
                     >
-                      Run 1000+ Extraction
+                      Extract 1,000+ Leads
                     </button>
                   ) : (
                     <button
                       onClick={handleStop}
                       className="px-10 py-5 rounded-2xl font-black text-sm bg-red-50 text-red-600 hover:bg-red-100 border border-red-100 transition-all active:scale-95"
                     >
-                      Stop Extraction
+                      Stop & Save Results
                     </button>
                   )}
                 </div>
@@ -229,10 +254,13 @@ const App: React.FC = () => {
                     ))}
                   </div>
                   {leads.length > 0 && (
-                    <div className="text-sm font-bold text-indigo-600 flex items-center gap-2">
-                      <span>{Math.round(progressPercentage)}% Complete</span>
-                      <span className="text-gray-300">|</span>
-                      <span>{leads.length} Unique Leads Found</span>
+                    <div className="text-sm font-bold text-indigo-600 flex items-center gap-3">
+                      <span className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping" />
+                        {Math.round(progressPercentage)}% Target
+                      </span>
+                      <span className="text-gray-200 font-normal">|</span>
+                      <span>{leads.length.toLocaleString()} Unique Leads</span>
                     </div>
                   )}
                 </div>
@@ -246,29 +274,40 @@ const App: React.FC = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <p className="text-sm">{error}</p>
+                <div>
+                    <p className="text-sm">{error}</p>
+                    <p className="text-[10px] text-amber-600 uppercase tracking-widest mt-1">Partial results saved below</p>
+                </div>
               </div>
             )}
 
+            {/* Live Data Feed */}
             <div className="space-y-6">
               <div className="flex items-center justify-between px-4">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
                   <h3 className="text-2xl font-black text-gray-900 tracking-tight">Intelligence Feed</h3>
                   {isLoading && (
-                    <span className="text-xs font-bold text-indigo-500 animate-pulse">{loadingSteps[loadingStep]}</span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-indigo-500 uppercase tracking-widest">{loadingSteps[loadingStep]}</span>
+                    </div>
                   )}
                 </div>
                 {leads.length > 0 && (
-                  <input
-                    type="text"
-                    placeholder="Search results..."
-                    value={filterText}
-                    onChange={(e) => {
-                      setFilterText(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="w-72 px-5 py-3 bg-white border border-gray-100 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-50 focus:outline-none shadow-sm"
-                  />
+                  <div className="relative group">
+                    <input
+                      type="text"
+                      placeholder="Filter database..."
+                      value={filterText}
+                      onChange={(e) => {
+                        setFilterText(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                      className="w-72 pl-10 pr-5 py-3 bg-white border border-gray-100 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-50 focus:outline-none shadow-sm group-hover:border-gray-200 transition-all"
+                    />
+                    <svg className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
                 )}
               </div>
 
@@ -277,9 +316,9 @@ const App: React.FC = () => {
               {leads.length > 0 && totalPages > 1 && (
                 <div className="flex items-center justify-between bg-white px-8 py-6 rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-200/40">
                   <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
-                    Page <span className="text-gray-900">{currentPage}</span> of {totalPages}
+                    Showing <span className="text-gray-900 font-black">{((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredLeads.length)}</span> of {filteredLeads.length}
                   </p>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <button
                       onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
@@ -289,6 +328,11 @@ const App: React.FC = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
                       </svg>
                     </button>
+                    <div className="flex items-center gap-1 text-sm font-bold text-gray-400">
+                        <span className="text-gray-900">{currentPage}</span>
+                        <span>/</span>
+                        <span>{totalPages}</span>
+                    </div>
                     <button
                       onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages}
