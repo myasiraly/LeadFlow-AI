@@ -2,6 +2,7 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import Sidebar from './components/Sidebar';
 import DataTable from './components/DataTable';
+import Auth from './components/Auth';
 import { ToolType, Lead, ToolConfig } from './types';
 import { TOOLS } from './constants';
 import { scrapeLeads } from './services/geminiService';
@@ -9,9 +10,10 @@ import { downloadLeadsCSV } from './utils/csv';
 
 const ITEMS_PER_PAGE = 12;
 const TARGET_LEADS = 1000;
-const MAX_BATCHES = 25; // Increased to ensure we hit 1000 even with some duplicates
+const MAX_BATCHES = 25;
 
 const App: React.FC = () => {
+  const [user, setUser] = useState<string | null>(null);
   const [activeToolId, setActiveToolId] = useState<ToolType>(ToolType.APOLLO);
   const [inputValue, setInputValue] = useState('');
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -31,6 +33,24 @@ const App: React.FC = () => {
     "Deduplicating Global Results..."
   ];
 
+  // Load user session on mount
+  useEffect(() => {
+    const savedUser = localStorage.getItem('leadgen_active_session');
+    if (savedUser) {
+      setUser(savedUser);
+    }
+  }, []);
+
+  const handleLogin = (email: string) => {
+    setUser(email);
+    localStorage.setItem('leadgen_active_session', email);
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('leadgen_active_session');
+  };
+
   useEffect(() => {
     let interval: any;
     if (isLoading) {
@@ -44,7 +64,6 @@ const App: React.FC = () => {
     };
   }, [isLoading]);
 
-  // Table state
   const [filterText, setFilterText] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -74,7 +93,6 @@ const App: React.FC = () => {
         setCurrentBatch(i + 1);
         const batch = await scrapeLeads(activeToolId, inputValue, i);
         
-        // De-duplicate against existing set
         const uniqueInBatch = batch.filter(lead => {
           const email = lead.email?.toLowerCase().trim();
           if (email && !seenEmails.has(email)) {
@@ -84,16 +102,13 @@ const App: React.FC = () => {
           return false;
         });
 
-        // Even if batch is small, we keep going until target or max batches
         accumulatedLeads = [...accumulatedLeads, ...uniqueInBatch];
         setLeads([...accumulatedLeads]);
 
-        // Break early only if multiple batches return absolutely nothing (dead end)
         if (uniqueInBatch.length === 0 && i > 5) {
             break;
         }
 
-        // Small cooling delay to prevent rate limit issues on rapid batching
         await new Promise(resolve => setTimeout(resolve, 500));
       }
     } catch (err: any) {
@@ -111,7 +126,7 @@ const App: React.FC = () => {
   };
 
   const handleDownload = () => {
-    downloadLeadsCSV(leads, `${activeToolId.toLowerCase().replace(/\s/g, '_')}_bulk_1000_export.csv`);
+    downloadLeadsCSV(leads, `${activeToolId.toLowerCase().replace(/\s/g, '_')}_bulk_export.csv`);
   };
 
   const filteredLeads = useMemo(() => {
@@ -133,12 +148,17 @@ const App: React.FC = () => {
 
   const progressPercentage = Math.min((leads.length / TARGET_LEADS) * 100, 100);
 
+  // If no user is logged in, show the Auth screen
+  if (!user) {
+    return <Auth onLogin={handleLogin} />;
+  }
+
   return (
     <div className="min-h-screen flex bg-[#f8f9fc] text-gray-900 selection:bg-indigo-100 selection:text-indigo-900 font-['Inter']">
       <Sidebar 
         activeTool={activeToolId} 
         onToolSelect={(id) => {
-          if (isLoading) return; // Prevent tool switching during bulk run
+          if (isLoading) return;
           setActiveToolId(id);
           setInputValue('');
           setLeads([]);
@@ -148,17 +168,17 @@ const App: React.FC = () => {
         }} 
       />
 
-      <main className="ml-72 flex-1 flex flex-col relative">
+      <main className="ml-72 flex-1 flex flex-col relative min-h-screen">
         <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-12 py-6">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-5">
-              <div className="text-4xl filter drop-shadow-sm">{activeTool.icon}</div>
+              <div className="text-4xl filter drop-shadow-sm transition-transform hover:scale-110 duration-300">{activeTool.icon}</div>
               <div>
-                <h2 className="text-2xl font-black text-gray-900 tracking-tight">{activeTool.id}</h2>
-                <div className="flex items-center gap-2 mt-1">
+                <h2 className="text-2xl font-black text-gray-900 tracking-tight leading-none mb-1">{activeTool.id}</h2>
+                <div className="flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${isLoading ? 'bg-indigo-500 animate-pulse' : 'bg-green-500'}`} />
                   <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.1em]">
-                    {isLoading ? `Processing Batch ${currentBatch}` : `Target: ${TARGET_LEADS} Verified Prospects`}
+                    {isLoading ? `Processing Batch ${currentBatch}` : `Verified Access: ${user}`}
                   </p>
                 </div>
               </div>
@@ -166,22 +186,31 @@ const App: React.FC = () => {
             
             <div className="flex items-center gap-4">
               {leads.length > 0 && (
-                <>
-                  <div className="hidden lg:block text-right">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Live Database</p>
-                    <p className="text-xl font-black text-indigo-600 leading-none">{leads.length.toLocaleString()}</p>
-                  </div>
+                <div className="hidden lg:block text-right">
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Live Database</p>
+                  <p className="text-xl font-black text-indigo-600 leading-none">{leads.length.toLocaleString()}</p>
+                </div>
+              )}
+              
+              <div className="flex items-center gap-3">
+                {leads.length > 0 && (
                   <button
                     onClick={handleDownload}
-                    className="flex items-center gap-2 px-6 py-3 bg-gray-900 hover:bg-black text-white rounded-2xl font-bold text-sm transition-all shadow-xl shadow-gray-200 active:scale-95"
+                    className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-sm transition-all shadow-xl shadow-indigo-100 active:scale-95"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    Export {leads.length} Leads
+                    Export CSV
                   </button>
-                </>
-              )}
+                )}
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center justify-center p-3 bg-white border border-gray-100 rounded-2xl text-gray-400 hover:text-red-500 transition-all shadow-sm group"
+                  title="Logout"
+                >
+                  <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </header>
@@ -189,7 +218,6 @@ const App: React.FC = () => {
         <div className="flex-1 p-12">
           <div className="max-w-7xl mx-auto space-y-10">
             
-            {/* Massive Hero Scraper Section */}
             <section className="bg-white rounded-[2.5rem] shadow-2xl shadow-indigo-100/30 border border-gray-100 p-10 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-2 bg-gray-50">
                 <div 
@@ -201,67 +229,42 @@ const App: React.FC = () => {
               <div className="flex flex-col space-y-8">
                 <div className="flex items-center justify-between">
                   <div className="max-w-xl">
-                    <h3 className="text-xl font-black text-gray-900 mb-2">Massive Lead Discovery Engine</h3>
-                    <p className="text-gray-500 text-sm font-medium">Extracting up to {TARGET_LEADS} leads via multi-batch intelligent scraping. Our engine performs ${MAX_BATCHES} distinct search cycles for total coverage.</p>
+                    <h3 className="text-xl font-black text-gray-900 mb-2">Lead Discovery Engine</h3>
+                    <p className="text-gray-500 text-sm font-medium">Extracting up to {TARGET_LEADS} leads via multi-batch intelligent scraping. Our engine performs deep search cycles for maximum coverage.</p>
                   </div>
                   {isLoading && (
-                    <div className="bg-indigo-50 px-5 py-2.5 rounded-2xl flex items-center gap-3 border border-indigo-100 shadow-sm">
+                    <div className="bg-indigo-50 px-5 py-2.5 rounded-2xl flex items-center gap-3 border border-indigo-100">
                       <div className="w-4 h-4 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin" />
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-black text-indigo-700 uppercase tracking-widest leading-none">Batch {currentBatch} of {MAX_BATCHES}</span>
-                        <span className="text-[9px] text-indigo-400 font-bold uppercase mt-1">Collecting Results...</span>
-                      </div>
+                      <span className="text-[10px] font-black text-indigo-700 uppercase tracking-widest leading-none">Batch {currentBatch} of {MAX_BATCHES}</span>
                     </div>
                   )}
                 </div>
 
                 <div className="flex flex-col md:flex-row gap-4">
-                  <div className="relative flex-1 group">
-                    <input
-                      type="text"
-                      disabled={isLoading}
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleRun()}
-                      placeholder={activeTool.placeholder}
-                      className="w-full pl-6 pr-6 py-5 bg-gray-50 border border-transparent rounded-2xl text-gray-900 font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all shadow-inner disabled:opacity-50"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    disabled={isLoading}
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleRun()}
+                    placeholder={activeTool.placeholder}
+                    className="flex-1 pl-6 pr-6 py-5 bg-gray-50 border border-transparent rounded-2xl text-gray-900 font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all shadow-inner disabled:opacity-50"
+                  />
                   {!isLoading ? (
                     <button
                       onClick={handleRun}
                       disabled={!inputValue.trim()}
                       className="px-10 py-5 rounded-2xl font-black text-sm bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-200 active:scale-95 transition-all disabled:bg-gray-200"
                     >
-                      Extract 1,000+ Leads
+                      Extract Leads
                     </button>
                   ) : (
                     <button
                       onClick={handleStop}
                       className="px-10 py-5 rounded-2xl font-black text-sm bg-red-50 text-red-600 hover:bg-red-100 border border-red-100 transition-all active:scale-95"
                     >
-                      Stop & Save Results
+                      Stop & Save
                     </button>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-                  <div className="flex gap-2">
-                    {activeTool.fields.slice(0, 5).map(field => (
-                      <span key={field} className="px-3 py-1 bg-white border border-gray-100 text-[10px] font-black uppercase text-gray-500 rounded-lg shadow-sm">
-                        {field}
-                      </span>
-                    ))}
-                  </div>
-                  {leads.length > 0 && (
-                    <div className="text-sm font-bold text-indigo-600 flex items-center gap-3">
-                      <span className="flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping" />
-                        {Math.round(progressPercentage)}% Target
-                      </span>
-                      <span className="text-gray-200 font-normal">|</span>
-                      <span>{leads.length.toLocaleString()} Unique Leads</span>
-                    </div>
                   )}
                 </div>
               </div>
@@ -274,35 +277,29 @@ const App: React.FC = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <div>
-                    <p className="text-sm">{error}</p>
-                    <p className="text-[10px] text-amber-600 uppercase tracking-widest mt-1">Partial results saved below</p>
-                </div>
+                <p className="text-sm">{error}</p>
               </div>
             )}
 
-            {/* Live Data Feed */}
             <div className="space-y-6">
               <div className="flex items-center justify-between px-4">
                 <div className="flex items-center gap-4">
-                  <h3 className="text-2xl font-black text-gray-900 tracking-tight">Intelligence Feed</h3>
+                  <h3 className="text-2xl font-black text-gray-900 tracking-tight">Intelligence Database</h3>
                   {isLoading && (
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-indigo-500 uppercase tracking-widest">{loadingSteps[loadingStep]}</span>
-                    </div>
+                    <span className="text-xs font-bold text-indigo-500 uppercase tracking-widest animate-pulse">{loadingSteps[loadingStep]}</span>
                   )}
                 </div>
                 {leads.length > 0 && (
                   <div className="relative group">
                     <input
                       type="text"
-                      placeholder="Filter database..."
+                      placeholder="Filter by keyword..."
                       value={filterText}
                       onChange={(e) => {
                         setFilterText(e.target.value);
                         setCurrentPage(1);
                       }}
-                      className="w-72 pl-10 pr-5 py-3 bg-white border border-gray-100 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-50 focus:outline-none shadow-sm group-hover:border-gray-200 transition-all"
+                      className="w-72 pl-10 pr-5 py-3 bg-white border border-gray-100 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-50 focus:outline-none shadow-sm transition-all"
                     />
                     <svg className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
