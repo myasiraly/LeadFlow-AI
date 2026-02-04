@@ -34,10 +34,17 @@ export interface Lead {
   details?: Record<string, string>;
 }
 
+export interface ToolAbout {
+  purpose: string;
+  limitations: string;
+  useCases: string[];
+}
+
 export interface ToolConfig {
   id: ToolType;
   icon: string;
   description: string;
   placeholder: string;
   fields: string[];
+  about: ToolAbout;
 }

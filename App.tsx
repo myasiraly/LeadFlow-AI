@@ -85,7 +85,6 @@ const App: React.FC = () => {
             seenHandles.add(handle);
             return true;
           }
-          // Fallback to name uniqueness if no contact info
           if (!email && !handle && lead.name) {
              return true; 
           }
@@ -267,6 +266,36 @@ const App: React.FC = () => {
                       <span>{leads.length.toLocaleString()} Unique Leads</span>
                     </div>
                   )}
+                </div>
+              </div>
+            </section>
+
+            <section className="bg-white/40 backdrop-blur-sm rounded-3xl border border-gray-100 p-8 grid md:grid-cols-3 gap-8">
+              <div>
+                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <div className="w-1 h-1 bg-indigo-500 rounded-full" />
+                  Purpose
+                </h4>
+                <p className="text-xs text-gray-600 leading-relaxed font-medium">{activeTool.about.purpose}</p>
+              </div>
+              <div>
+                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <div className="w-1 h-1 bg-amber-500 rounded-full" />
+                  Limitations
+                </h4>
+                <p className="text-xs text-gray-600 leading-relaxed font-medium">{activeTool.about.limitations}</p>
+              </div>
+              <div>
+                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <div className="w-1 h-1 bg-emerald-500 rounded-full" />
+                  Best Use Cases
+                </h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {activeTool.about.useCases.map((useCase, idx) => (
+                    <span key={idx} className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-lg border border-emerald-100/50">
+                      {useCase}
+                    </span>
+                  ))}
                 </div>
               </div>
             </section>
