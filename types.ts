@@ -47,4 +47,5 @@ export interface ToolConfig {
   placeholder: string;
   fields: string[];
   about: ToolAbout;
+  suggestedPrompts: string[];
 }

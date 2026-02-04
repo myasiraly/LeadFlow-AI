@@ -118,6 +118,11 @@ const App: React.FC = () => {
     downloadLeadsCSV(leads, `${activeToolId.toLowerCase().replace(/\s/g, '_')}_export.csv`);
   };
 
+  const handleSuggestionClick = (prompt: string) => {
+    if (isLoading) return;
+    setInputValue(prompt);
+  };
+
   const filteredLeads = useMemo(() => {
     if (!filterText.trim()) return leads;
     const lowerFilter = filterText.toLowerCase();
@@ -218,33 +223,50 @@ const App: React.FC = () => {
                   )}
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="relative flex-1 group">
-                    <input
-                      type="text"
-                      disabled={isLoading}
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleRun()}
-                      placeholder={activeTool.placeholder}
-                      className="w-full pl-6 pr-6 py-5 bg-gray-50 border border-transparent rounded-2xl text-gray-900 font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all shadow-inner disabled:opacity-50"
-                    />
+                <div className="space-y-4">
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <div className="relative flex-1 group">
+                      <input
+                        type="text"
+                        disabled={isLoading}
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleRun()}
+                        placeholder={activeTool.placeholder}
+                        className="w-full pl-6 pr-6 py-5 bg-gray-50 border border-transparent rounded-2xl text-gray-900 font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all shadow-inner disabled:opacity-50"
+                      />
+                    </div>
+                    {!isLoading ? (
+                      <button
+                        onClick={handleRun}
+                        disabled={!inputValue.trim()}
+                        className="px-10 py-5 rounded-2xl font-black text-sm bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-200 active:scale-95 transition-all disabled:bg-gray-200"
+                      >
+                        Extract 1,000+ Leads
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleStop}
+                        className="px-10 py-5 rounded-2xl font-black text-sm bg-red-50 text-red-600 hover:bg-red-100 border border-red-100 transition-all active:scale-95"
+                      >
+                        Stop & Save Results
+                      </button>
+                    )}
                   </div>
-                  {!isLoading ? (
-                    <button
-                      onClick={handleRun}
-                      disabled={!inputValue.trim()}
-                      className="px-10 py-5 rounded-2xl font-black text-sm bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-200 active:scale-95 transition-all disabled:bg-gray-200"
-                    >
-                      Extract 1,000+ Leads
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleStop}
-                      className="px-10 py-5 rounded-2xl font-black text-sm bg-red-50 text-red-600 hover:bg-red-100 border border-red-100 transition-all active:scale-95"
-                    >
-                      Stop & Save Results
-                    </button>
+
+                  {!isLoading && (
+                    <div className="flex flex-wrap items-center gap-3 animate-slide-up">
+                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Try a Strategy:</span>
+                      {activeTool.suggestedPrompts.map((prompt, i) => (
+                        <button
+                          key={i}
+                          onClick={() => handleSuggestionClick(prompt)}
+                          className="px-3 py-1.5 bg-gray-50 hover:bg-indigo-50 text-gray-600 hover:text-indigo-600 border border-gray-100 hover:border-indigo-100 rounded-xl text-[11px] font-bold transition-all active:scale-95"
+                        >
+                          {prompt}
+                        </button>
+                      ))}
+                    </div>
                   )}
                 </div>
 
