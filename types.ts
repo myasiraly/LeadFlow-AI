@@ -1,4 +1,3 @@
-
 export enum ToolType {
   APOLLO = 'Apollo Scraper',
   EMAIL_FINDER = 'Email Finder Tool',
@@ -11,7 +10,10 @@ export enum ToolType {
   PROPERTY = 'Property Search',
   ANGI = 'Angi Scraper',
   YELP = 'Yelp Scraper',
-  PEOPLE = 'People Finder'
+  PEOPLE = 'People Finder',
+  INSTAGRAM = 'Instagram Scraper',
+  TWITTER = 'Twitter (X) Scraper',
+  LINKEDIN = 'LinkedIn Scraper'
 }
 
 export interface Lead {
@@ -25,6 +27,10 @@ export interface Lead {
   website?: string;
   industry?: string;
   source?: string;
+  handle?: string;
+  followers?: string;
+  engagement?: string;
+  bio?: string;
   details?: Record<string, string>;
 }
 

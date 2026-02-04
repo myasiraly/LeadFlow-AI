@@ -1,24 +1,23 @@
-
 import React from 'react';
 import { Lead } from '../types';
 
 interface DataTableProps {
   leads: Lead[];
   isLoading: boolean;
+  columns: string[];
 }
 
-const DataTable: React.FC<DataTableProps> = ({ leads, isLoading }) => {
-  if (isLoading) {
+const DataTable: React.FC<DataTableProps> = ({ leads, isLoading, columns }) => {
+  if (isLoading && leads.length === 0) {
     return (
       <div className="w-full bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="animate-pulse">
           <div className="h-16 bg-gray-50 border-b border-gray-100" />
           {[...Array(6)].map((_, i) => (
             <div key={i} className="flex px-6 py-5 border-b border-gray-50 space-x-4">
-              <div className="h-4 bg-gray-100 rounded w-1/4" />
-              <div className="h-4 bg-gray-100 rounded w-1/4" />
-              <div className="h-4 bg-gray-100 rounded w-1/4" />
-              <div className="h-4 bg-gray-100 rounded w-1/4" />
+              {columns.map((_, j) => (
+                <div key={j} className="h-4 bg-gray-100 rounded flex-1" />
+              ))}
             </div>
           ))}
         </div>
@@ -45,8 +44,6 @@ const DataTable: React.FC<DataTableProps> = ({ leads, isLoading }) => {
     );
   }
 
-  const columns = ['name', 'company', 'email', 'phone', 'location', 'industry'];
-
   return (
     <div className="w-full overflow-hidden bg-white rounded-3xl shadow-sm border border-gray-100 transition-all duration-500 hover:shadow-xl hover:shadow-indigo-500/5">
       <div className="overflow-x-auto custom-scrollbar">
@@ -68,14 +65,20 @@ const DataTable: React.FC<DataTableProps> = ({ leads, isLoading }) => {
                     {col === 'name' ? (
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs">
-                          {(lead as any)[col]?.charAt(0)}
+                          {lead.name?.charAt(0)}
                         </div>
-                        <span className="font-bold text-gray-900">{(lead as any)[col]}</span>
+                        <span className="font-bold text-gray-900">{lead.name}</span>
                       </div>
                     ) : col === 'email' ? (
-                      <span className="text-indigo-600 font-medium">{(lead as any)[col] || '—'}</span>
+                      <span className="text-indigo-600 font-medium">{lead.email || '—'}</span>
+                    ) : col === 'handle' ? (
+                      <span className="text-purple-600 font-bold">{lead.handle || '—'}</span>
+                    ) : col === 'engagement' ? (
+                      <span className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded-md font-black text-[10px] uppercase">
+                        {lead.engagement || '—'}
+                      </span>
                     ) : (
-                      <span className="text-gray-600">{(lead as any)[col] || '—'}</span>
+                      <span className="text-gray-600 truncate max-w-[200px] block">{(lead as any)[col] || '—'}</span>
                     )}
                   </td>
                 ))}
