@@ -16,6 +16,20 @@ export enum ToolType {
   LINKEDIN = 'LinkedIn Scraper'
 }
 
+export enum PlanType {
+  FREE = 'Free',
+  PRO = 'Pro'
+}
+
+export interface UserProfile {
+  email: string;
+  plan: PlanType;
+  searchesToday: number;
+  lastSearchDate: string;
+  totalLeadsExtracted: number;
+  subscriptionActive: boolean;
+}
+
 export interface Lead {
   id: string;
   name?: string;

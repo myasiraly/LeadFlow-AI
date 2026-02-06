@@ -1,14 +1,18 @@
-
 import React from 'react';
-import { ToolType, ToolConfig } from '../types';
+import { ToolType, ToolConfig, UserProfile, PlanType } from '../types';
 import { TOOLS } from '../constants';
+import { auth } from '../services/firebaseService';
+import { signOut } from 'firebase/auth';
 
 interface SidebarProps {
   activeTool: ToolType;
   onToolSelect: (tool: ToolType) => void;
+  userProfile?: UserProfile | null;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTool, onToolSelect }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTool, onToolSelect, userProfile }) => {
+  const handleLogout = () => signOut(auth);
+
   return (
     <div className="w-72 bg-white border-r border-gray-100 h-screen flex flex-col fixed left-0 top-0 overflow-y-auto custom-scrollbar z-30">
       <div className="p-8">
@@ -20,7 +24,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTool, onToolSelect }) => {
           </div>
           <div>
             <h1 className="text-xl font-extrabold text-gray-900 tracking-tight leading-none">LeadGen AI</h1>
-            <p className="text-[10px] text-indigo-500 font-bold uppercase tracking-widest mt-1">Instant Prospect Lists</p>
+            <p className="text-[10px] text-indigo-500 font-bold uppercase tracking-widest mt-1">Intelligence Core</p>
           </div>
         </div>
       </div>
@@ -43,11 +47,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTool, onToolSelect }) => {
                   {tool.icon}
                 </span>
                 <span className="truncate">{tool.id}</span>
-                {activeTool === tool.id && (
-                  <div className="ml-auto">
-                    <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                  </div>
-                )}
               </button>
             ))}
           </div>
@@ -55,18 +54,34 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTool, onToolSelect }) => {
       </nav>
 
       <div className="p-6 mt-auto">
-        <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-[10px] font-bold shadow-sm">
-              AI
+        <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs font-black shadow-md uppercase">
+              {userProfile?.email?.charAt(0) || 'U'}
             </div>
-            <div>
-              <p className="text-xs font-bold text-gray-800">Gemini 3 Flash</p>
-              <p className="text-[10px] text-green-600 font-bold uppercase tracking-tighter">Unlimited Access</p>
+            <div className="truncate">
+              <p className="text-xs font-black text-gray-900 truncate">{userProfile?.email}</p>
+              <p className="text-[9px] text-indigo-600 font-black uppercase tracking-widest">{userProfile?.plan || 'Free'} Plan</p>
             </div>
           </div>
-          <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
-            <div className="w-full h-full bg-indigo-500" />
+          
+          <div className="space-y-3">
+             <div className="flex justify-between items-center text-[10px] font-black uppercase text-gray-400">
+               <span>Usage</span>
+               <span className="text-gray-900">{userProfile?.searchesToday || 0} / 3</span>
+             </div>
+             <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-indigo-500 transition-all duration-500" 
+                  style={{ width: `${((userProfile?.searchesToday || 0) / 3) * 100}%` }} 
+                />
+             </div>
+             <button 
+              onClick={handleLogout}
+              className="w-full py-2.5 mt-2 bg-white border border-gray-200 text-[10px] font-black uppercase text-gray-400 hover:text-red-500 hover:border-red-100 transition-all rounded-xl"
+             >
+               Logout
+             </button>
           </div>
         </div>
       </div>
