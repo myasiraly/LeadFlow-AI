@@ -12,10 +12,8 @@ const firebaseConfig = {
   appId: "1:802312999592:web:236b6eef90f9c2aca1289d"
 };
 
-// Singleton initialization
 const app: FirebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-// Export services initialized with the current app instance
 export const auth: Auth = getAuth(app);
 export const db: Firestore = getFirestore(app);
 

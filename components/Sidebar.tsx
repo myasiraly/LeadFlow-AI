@@ -11,7 +11,11 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTool, onToolSelect, userProfile }) => {
-  const handleLogout = () => signOut(auth);
+  const handleLogout = () => {
+    if (confirm("Are you sure you want to log out of your account?")) {
+      signOut(auth);
+    }
+  };
 
   return (
     <div className="w-72 bg-white border-r border-gray-100 h-screen flex flex-col fixed left-0 top-0 overflow-y-auto custom-scrollbar z-30">
@@ -70,17 +74,21 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTool, onToolSelect, userProfile
                <span>Usage</span>
                <span className="text-gray-900">{userProfile?.searchesToday || 0} / 3</span>
              </div>
-             <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
+             <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-indigo-500 transition-all duration-500" 
-                  style={{ width: `${((userProfile?.searchesToday || 0) / 3) * 100}%` }} 
+                  style={{ width: `${Math.min(((userProfile?.searchesToday || 0) / 3) * 100, 100)}%` }} 
                 />
              </div>
+             
              <button 
               onClick={handleLogout}
-              className="w-full py-2.5 mt-2 bg-white border border-gray-200 text-[10px] font-black uppercase text-gray-400 hover:text-red-500 hover:border-red-100 transition-all rounded-xl"
+              className="w-full py-3 mt-2 bg-white border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-red-500 hover:border-red-100 hover:bg-red-50/50 transition-all rounded-xl flex items-center justify-center gap-2"
              >
-               Logout
+               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+               </svg>
+               Logout Account
              </button>
           </div>
         </div>
