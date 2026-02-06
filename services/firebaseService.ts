@@ -3,6 +3,19 @@ import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, Firestore } from 'firebase/firestore';
 import { UserProfile, PlanType } from '../types';
 
+/**
+ * FIRESTORE SECURITY RULES (REQUIRED):
+ * 
+ * rules_version = '2';
+ * service cloud.firestore {
+ *   match /databases/{database}/documents {
+ *     match /users/{email} {
+ *       allow read, write: if request.auth != null && request.auth.token.email == email;
+ *     }
+ *   }
+ * }
+ */
+
 const firebaseConfig = {
   apiKey: "AIzaSyA9PjQeDp2IMy6MEB_gyFZ7VfTaOdaVNbo",
   authDomain: "leadgen-ai-f44d5.firebaseapp.com",
@@ -19,7 +32,14 @@ export const db: Firestore = getFirestore(app);
 
 export async function getUserProfile(email: string): Promise<UserProfile> {
   const docRef = doc(db, 'users', email);
-  const docSnap = await getDoc(docRef);
+  let docSnap;
+  
+  try {
+    docSnap = await getDoc(docRef);
+  } catch (err: any) {
+    console.error("Firebase getDoc Error:", err);
+    throw err; // Re-throw to be caught by App.tsx init logic
+  }
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -39,17 +59,27 @@ export async function getUserProfile(email: string): Promise<UserProfile> {
       totalLeadsExtracted: 0,
       subscriptionActive: false
     };
-    await setDoc(docRef, newProfile);
+    try {
+      await setDoc(docRef, newProfile);
+    } catch (err: any) {
+      console.error("Firebase setDoc Error:", err);
+      throw err;
+    }
     return newProfile;
   }
 }
 
 export async function incrementSearchCount(email: string, leadsFound: number) {
   const docRef = doc(db, 'users', email);
-  await updateDoc(docRef, {
-    searchesToday: increment(1),
-    totalLeadsExtracted: increment(leadsFound)
-  });
+  try {
+    await updateDoc(docRef, {
+      searchesToday: increment(1),
+      totalLeadsExtracted: increment(leadsFound)
+    });
+  } catch (err: any) {
+    console.error("Firebase updateDoc Error:", err);
+    throw err;
+  }
 }
 
 export async function upgradeToPro(email: string) {

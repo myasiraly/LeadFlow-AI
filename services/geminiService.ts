@@ -7,68 +7,69 @@ export async function scrapeLeads(tool: ToolType, input: string, batchIndex: num
   const isSocial = [ToolType.INSTAGRAM, ToolType.TWITTER, ToolType.LINKEDIN, ToolType.YOUTUBE].includes(tool);
   
   const prompt = `
-    You are an elite, high-capacity lead generation engine (Iterative Mode - Batch #${batchIndex + 1}).
-    Task: Extract 80-100 HIGHLY UNIQUE leads for: ${tool}.
-    Base Input: "${input}"
+    TASK: Extract high-quality, verified leads for the tool: ${tool}.
+    USER QUERY: "${input}"
+    CURRENT BATCH: ${batchIndex + 1}
     
-    STRATEGY FOR THIS BATCH: 
-    - Since this is batch #${batchIndex + 1}, focus on a DIFFERENT subset of data.
-    - If it's a geographic search, look at a different neighborhood or suburb.
-    - If it's a social/people search, focus on different keywords or profile segments.
-    - Use the googleSearch tool to find specific result pages or niche directories that haven't been visited in previous batches.
+    GUIDELINES:
+    1. EXCLUSIVITY: For this batch, focus on discovering a NEW set of leads that are distinct from standard or previous results. 
+    2. VERIFICATION: Only return leads where you can reasonably infer or find high-confidence data points. Avoid placeholders like "N/A" if possible; seek the best available public information.
+    3. RELEVANCE: Ensure every lead strictly matches the industry, role, or location specified in the user query.
+    4. SOURCE ACCURACY: Reference actual public platforms (LinkedIn, X, Maps, Yelp, etc.) via the googleSearch tool.
     
-    ${isSocial ? `FOR SOCIAL PLATFORMS:
-    - Extract engagement metrics (e.g. '2.4% ER').
-    - Extract follower counts (e.g. '150k').
-    - Identify handles (e.g. '@username').
-    - Look specifically for public contact info in bios or linked trees.` : ''}
+    ${isSocial ? `SOCIAL MEDIA FOCUS:
+    - Capture the specific @handle.
+    - Analyze public profile data to estimate 'engagement' (e.g., "High", "3.2%", "Very Active").
+    - Provide a verified 'followers' count in a readable format (e.g., "12.4k").` : ''}
     
-    CRITICAL QUALITY RULES:
-    - Every lead MUST have a valid-looking name and preferably a contact method (email/phone/handle).
-    - Do NOT repeat any leads from previous conceptual batches.
-    - Return exactly 80-100 leads in this response.
-    
-    Response format: JSON array of objects.
+    LEAD STRUCTURE:
+    - id: A unique string identifier.
+    - name: Business or individual name.
+    - email: Direct or company email (crucial).
+    - phone: Contact number if available.
+    - company/title: Professional context.
+    - bio: A 1-sentence summary of why this lead is relevant.
   `;
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      tools: [{ googleSearch: {} }],
-      responseSchema: {
-        type: Type.ARRAY,
-        items: {
-          type: Type.OBJECT,
-          properties: {
-            id: { type: Type.STRING },
-            name: { type: Type.STRING },
-            email: { type: Type.STRING },
-            phone: { type: Type.STRING },
-            company: { type: Type.STRING },
-            title: { type: Type.STRING },
-            location: { type: Type.STRING },
-            website: { type: Type.STRING },
-            industry: { type: Type.STRING },
-            handle: { type: Type.STRING },
-            followers: { type: Type.STRING },
-            engagement: { type: Type.STRING },
-            bio: { type: Type.STRING },
-            source: { type: Type.STRING }
-          },
-          required: ["id", "name"]
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-pro-preview',
+      contents: prompt,
+      config: {
+        systemInstruction: "You are a professional lead generation engine. You must output data strictly in the requested JSON schema. Do not include conversational filler. Focus on accuracy, deliverability of contact info, and strict adherence to the search niche provided by the user.",
+        responseMimeType: "application/json",
+        tools: [{ googleSearch: {} }],
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              id: { type: Type.STRING, description: "A unique identifier" },
+              name: { type: Type.STRING, description: "Full name" },
+              email: { type: Type.STRING, description: "Email address" },
+              phone: { type: Type.STRING, description: "Phone number" },
+              company: { type: Type.STRING, description: "Company name" },
+              title: { type: Type.STRING, description: "Job title" },
+              location: { type: Type.STRING, description: "City/Region" },
+              website: { type: Type.STRING, description: "URL" },
+              industry: { type: Type.STRING, description: "Niche" },
+              handle: { type: Type.STRING, description: "Social handle" },
+              followers: { type: Type.STRING, description: "Follower count" },
+              engagement: { type: Type.STRING, description: "Engagement metric" },
+              bio: { type: Type.STRING, description: "Relevance summary" },
+              source: { type: Type.STRING, description: "Source platform" }
+            },
+            required: ["id", "name"]
+          }
         }
       }
-    }
-  });
+    });
 
-  try {
     const text = response.text.trim();
     const data = JSON.parse(text);
     return Array.isArray(data) ? data : [];
   } catch (error) {
-    console.error(`Batch ${batchIndex} failed:`, error);
+    console.error(`Extraction failed at Batch ${batchIndex}:`, error);
     return [];
   }
 }

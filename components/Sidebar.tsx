@@ -17,6 +17,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTool, onToolSelect, userProfile
     }
   };
 
+  const leadLimit = 1000;
+  const totalLeads = userProfile?.totalLeadsExtracted || 0;
+  const leadPercentage = Math.min((totalLeads / leadLimit) * 100, 100);
+
   return (
     <div className="w-72 bg-white border-r border-gray-100 h-screen flex flex-col fixed left-0 top-0 overflow-y-auto custom-scrollbar z-30">
       <div className="p-8">
@@ -71,7 +75,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTool, onToolSelect, userProfile
           
           <div className="space-y-3">
              <div className="flex justify-between items-center text-[10px] font-black uppercase text-gray-400">
-               <span>Usage</span>
+               <span>Daily Runs</span>
                <span className="text-gray-900">{userProfile?.searchesToday || 0} / 3</span>
              </div>
              <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
@@ -80,6 +84,21 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTool, onToolSelect, userProfile
                   style={{ width: `${Math.min(((userProfile?.searchesToday || 0) / 3) * 100, 100)}%` }} 
                 />
              </div>
+
+             {userProfile?.plan === PlanType.FREE && (
+               <>
+                 <div className="flex justify-between items-center text-[10px] font-black uppercase text-gray-400 pt-1">
+                   <span>Lead Cap</span>
+                   <span className="text-gray-900">{totalLeads.toLocaleString()} / 1,000</span>
+                 </div>
+                 <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-emerald-500 transition-all duration-500" 
+                      style={{ width: `${leadPercentage}%` }} 
+                    />
+                 </div>
+               </>
+             )}
              
              <button 
               onClick={handleLogout}
