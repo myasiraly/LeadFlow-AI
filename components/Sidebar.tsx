@@ -1,5 +1,5 @@
 import React from 'react';
-import { ToolType, ToolConfig, UserProfile, PlanType } from '../types';
+import { ToolType, UserProfile, PlanType } from '../types';
 import { TOOLS } from '../constants';
 import { auth } from '../services/firebaseService';
 import { signOut } from 'firebase/auth';
@@ -8,111 +8,103 @@ interface SidebarProps {
   activeTool: ToolType;
   onToolSelect: (tool: ToolType) => void;
   userProfile?: UserProfile | null;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTool, onToolSelect, userProfile }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTool, onToolSelect, userProfile, isOpen, onClose }) => {
   const handleLogout = () => {
-    if (confirm("Are you sure you want to log out of your account?")) {
+    if (confirm("Sign out of your session?")) {
       signOut(auth);
     }
   };
 
-  const leadLimit = 1000;
-  const totalLeads = userProfile?.totalLeadsExtracted || 0;
-  const leadPercentage = Math.min((totalLeads / leadLimit) * 100, 100);
-
   return (
-    <div className="w-72 bg-white border-r border-gray-100 h-screen flex flex-col fixed left-0 top-0 overflow-y-auto custom-scrollbar z-30">
-      <div className="p-8">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
-          <div>
-            <h1 className="text-xl font-extrabold text-gray-900 tracking-tight leading-none">LeadGen AI</h1>
-            <p className="text-[10px] text-indigo-500 font-bold uppercase tracking-widest mt-1">Intelligence Core</p>
-          </div>
-        </div>
-      </div>
+    <>
+      {/* Mobile Overlay */}
+      <div 
+        className={`fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
+        onClick={onClose}
+      />
       
-      <nav className="flex-1 px-4 pb-4 space-y-6">
-        <div>
-          <p className="px-4 mb-3 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Scraper Engines</p>
-          <div className="space-y-1">
-            {TOOLS.map((tool) => (
-              <button
-                key={tool.id}
-                onClick={() => onToolSelect(tool.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 group ${
-                  activeTool === tool.id
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100'
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-              >
-                <span className={`text-lg transition-transform duration-300 group-hover:scale-110 ${activeTool === tool.id ? '' : 'filter grayscale'}`}>
-                  {tool.icon}
-                </span>
-                <span className="truncate">{tool.id}</span>
-              </button>
-            ))}
+      {/* Sidebar Container */}
+      <div className={`fixed left-0 top-0 h-screen w-64 bg-white border-r border-gray-100 z-50 shadow-2xl lg:shadow-[4px_0_24px_rgba(0,0,0,0.02)] transition-transform duration-300 transform ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} flex flex-col`}>
+        <div className="p-6 pt-10 flex flex-col items-center">
+          <div className="flex items-center gap-3 mb-1">
+            <svg className="w-10 h-auto" viewBox="0 0 100 85" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M15 10V55H50V43H27V10H15Z" fill="#1D4E89" />
+              <path d="M55 10H95V22H67V65H95V48H78V36H107V77H55V10Z" fill="#76BC21" />
+              <path d="M42 42L55 25L68 42H42Z" fill="#1D4E89" />
+            </svg>
+            <div className="flex flex-col">
+              <h1 className="text-xl font-black text-[#1D4E89] tracking-tighter leading-none">LEAD<span className="text-[#76BC21]">GEN</span></h1>
+              <p className="text-[7px] font-bold text-gray-400 tracking-[0.3em] uppercase">AI Prospecting</p>
+            </div>
           </div>
         </div>
-      </nav>
-
-      <div className="p-6 mt-auto">
-        <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs font-black shadow-md uppercase">
-              {userProfile?.email?.charAt(0) || 'U'}
-            </div>
-            <div className="truncate">
-              <p className="text-xs font-black text-gray-900 truncate">{userProfile?.email}</p>
-              <p className="text-[9px] text-indigo-600 font-black uppercase tracking-widest">{userProfile?.plan || 'Free'} Plan</p>
+        
+        <div className="flex-1 px-4 overflow-y-auto custom-scrollbar mt-4 space-y-6 pb-6">
+          <div>
+            <p className="px-3 mb-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Platforms</p>
+            <div className="space-y-1">
+              {TOOLS.map((tool) => (
+                <button
+                  key={tool.id}
+                  onClick={() => {
+                    onToolSelect(tool.id);
+                    if (window.innerWidth < 1024) onClose();
+                  }}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 group ${
+                    activeTool === tool.id
+                      ? 'bg-blue-50 text-[#1D4E89]'
+                      : 'text-gray-500 hover:bg-gray-50 hover:text-[#1D4E89]'
+                  }`}
+                >
+                  <span className={`text-lg transition-transform ${activeTool === tool.id ? 'scale-110' : 'opacity-60 grayscale group-hover:opacity-100 group-hover:grayscale-0'}`}>
+                    {tool.icon}
+                  </span>
+                  <span className="truncate">{tool.id}</span>
+                </button>
+              ))}
             </div>
           </div>
-          
-          <div className="space-y-3">
-             <div className="flex justify-between items-center text-[10px] font-black uppercase text-gray-400">
-               <span>Daily Runs</span>
-               <span className="text-gray-900">{userProfile?.searchesToday || 0} / 3</span>
-             </div>
-             <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-indigo-500 transition-all duration-500" 
-                  style={{ width: `${Math.min(((userProfile?.searchesToday || 0) / 3) * 100, 100)}%` }} 
-                />
-             </div>
+        </div>
 
-             {userProfile?.plan === PlanType.FREE && (
-               <>
-                 <div className="flex justify-between items-center text-[10px] font-black uppercase text-gray-400 pt-1">
-                   <span>Lead Cap</span>
-                   <span className="text-gray-900">{totalLeads.toLocaleString()} / 1,000</span>
-                 </div>
-                 <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-emerald-500 transition-all duration-500" 
-                      style={{ width: `${leadPercentage}%` }} 
-                    />
-                 </div>
-               </>
-             )}
-             
-             <button 
+        <div className="p-4 border-t border-gray-50 bg-gray-50/30">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#1D4E89] flex items-center justify-center text-white text-xs font-bold shadow-md">
+                {userProfile?.email?.charAt(0).toUpperCase() || 'U'}
+              </div>
+              <div className="truncate flex-1">
+                <p className="text-[11px] font-bold text-gray-900 truncate">{userProfile?.email}</p>
+                <span className="text-[9px] font-bold text-[#76BC21] uppercase tracking-wider">{userProfile?.plan || 'Free'} Plan</span>
+              </div>
+            </div>
+            
+            <div className="space-y-1.5">
+               <div className="flex justify-between text-[9px] font-bold text-gray-400 uppercase tracking-wide">
+                 <span>Daily Capacity</span>
+                 <span className="text-gray-900">{userProfile?.searchesToday || 0}/3</span>
+               </div>
+               <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-[#1D4E89] to-[#76BC21] rounded-full transition-all duration-700" 
+                    style={{ width: `${Math.min(((userProfile?.searchesToday || 0) / 3) * 100, 100)}%` }} 
+                  />
+               </div>
+            </div>
+
+            <button 
               onClick={handleLogout}
-              className="w-full py-3 mt-2 bg-white border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-red-500 hover:border-red-100 hover:bg-red-50/50 transition-all rounded-xl flex items-center justify-center gap-2"
-             >
-               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-               </svg>
-               Logout Account
-             </button>
+              className="w-full py-2.5 text-[10px] font-bold text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all rounded-lg uppercase tracking-widest border border-transparent hover:border-red-100"
+            >
+              Logout
+            </button>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

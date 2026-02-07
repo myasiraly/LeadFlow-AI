@@ -7,38 +7,43 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --primary: #1D4E89;
+      --accent: #76BC21;
+      --bg: #F9FAFB;
+    }
     body {
       font-family: 'Inter', sans-serif;
-      background-color: #f8f9fc;
+      background-color: var(--bg);
+      color: #111827;
       margin: 0;
       padding: 0;
+      -webkit-font-smoothing: antialiased;
     }
     .custom-scrollbar::-webkit-scrollbar {
-      width: 6px;
+      width: 5px;
     }
     .custom-scrollbar::-webkit-scrollbar-track {
-      background: #f1f1f1;
+      background: transparent;
     }
     .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #c1c1c1;
-      border-radius: 3px;
+      background: #E5E7EB;
+      border-radius: 10px;
     }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: #a1a1a1;
+      background: #D1D5DB;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.5);
     }
     @keyframes slideUp {
-      from { opacity: 0; transform: translateY(20px); }
+      from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
     .animate-slide-up {
-      animation: slideUp 0.4s ease-out forwards;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    .animate-fade-in {
-      animation: fadeIn 0.3s ease-out forwards;
+      animation: slideUp 0.3s ease-out forwards;
     }
   </style>
 <script type="importmap">

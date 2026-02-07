@@ -10,16 +10,18 @@ interface DataTableProps {
 const DataTable: React.FC<DataTableProps> = ({ leads, isLoading, columns }) => {
   if (isLoading && leads.length === 0) {
     return (
-      <div className="w-full bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="animate-pulse">
-          <div className="h-16 bg-gray-50 border-b border-gray-100" />
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="flex px-6 py-5 border-b border-gray-50 space-x-4">
-              {columns.map((_, j) => (
-                <div key={j} className="h-4 bg-gray-100 rounded flex-1" />
-              ))}
-            </div>
-          ))}
+      <div className="w-full bg-white rounded-2xl md:rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
+        <div className="animate-pulse p-6 md:p-10 space-y-6">
+          <div className="h-4 bg-gray-50 w-1/4 rounded-full" />
+          <div className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex gap-4 md:gap-8">
+                <div className="h-3 bg-gray-50 flex-1 rounded-full" />
+                <div className="h-3 bg-gray-50 flex-1 rounded-full" />
+                <div className="h-3 bg-gray-50 flex-1 rounded-full" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -27,31 +29,26 @@ const DataTable: React.FC<DataTableProps> = ({ leads, isLoading, columns }) => {
 
   if (leads.length === 0) {
     return (
-      <div className="w-full bg-white rounded-3xl shadow-sm border border-gray-100 p-24 flex flex-col items-center justify-center text-center">
-        <div className="relative mb-6">
-          <div className="absolute inset-0 bg-indigo-100 rounded-full blur-2xl opacity-50 scale-150 animate-pulse" />
-          <div className="relative w-24 h-24 bg-indigo-50 rounded-3xl flex items-center justify-center rotate-12 shadow-sm border border-indigo-100">
-            <svg className="w-12 h-12 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
-          </div>
+      <div className="w-full bg-white rounded-[1.5rem] md:rounded-[2rem] border border-gray-100 p-12 md:p-24 flex flex-col items-center justify-center text-center shadow-sm">
+        <div className="w-16 h-16 md:w-20 md:h-20 bg-blue-50 text-[#1D4E89] rounded-2xl md:rounded-3xl flex items-center justify-center mb-6 md:mb-8 rotate-3 shadow-sm border border-blue-100/50">
+          <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
         </div>
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Ready to scrape intelligence?</h3>
-        <p className="text-gray-500 max-w-sm">
-          Enter a domain, social link, or keywords to extract verified contact details instantly.
-        </p>
+        <h3 className="text-xs md:text-sm font-bold text-gray-400 uppercase tracking-[0.3em] mb-3">System Idle</h3>
+        <p className="text-xl md:text-2xl font-black text-gray-900 tracking-tight max-w-sm px-4">Search for targets to populate your prospect list.</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full overflow-hidden bg-white rounded-3xl shadow-sm border border-gray-100 transition-all duration-500 hover:shadow-xl hover:shadow-indigo-500/5">
+    <div className="w-full bg-white rounded-[1.5rem] md:rounded-[2rem] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
       <div className="overflow-x-auto custom-scrollbar">
-        <table className="w-full text-left border-collapse">
+        <table className="w-full text-left border-collapse min-w-[600px] md:min-w-0">
           <thead>
             <tr className="bg-gray-50/50">
               {columns.map(col => (
-                <th key={col} className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] border-b border-gray-100">
+                <th key={col} className="px-6 md:px-8 py-4 md:py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">
                   {col}
                 </th>
               ))}
@@ -59,26 +56,20 @@ const DataTable: React.FC<DataTableProps> = ({ leads, isLoading, columns }) => {
           </thead>
           <tbody className="divide-y divide-gray-50">
             {leads.map((lead, idx) => (
-              <tr key={lead.id || idx} className="group hover:bg-indigo-50/30 transition-colors duration-200">
+              <tr key={lead.id || idx} className="group hover:bg-blue-50/20 transition-all">
                 {columns.map(col => (
-                  <td key={col} className="px-8 py-5 text-sm">
+                  <td key={col} className="px-6 md:px-8 py-4 md:py-5">
                     {col === 'name' ? (
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs">
-                          {lead.name?.charAt(0)}
+                      <div className="flex items-center gap-3 md:gap-4">
+                        <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-gray-900 flex items-center justify-center text-white font-bold text-[9px] md:text-[10px] shadow-sm group-hover:bg-[#1D4E89] transition-colors">
+                          {lead.name?.charAt(0).toUpperCase()}
                         </div>
-                        <span className="font-bold text-gray-900">{lead.name}</span>
+                        <span className="font-bold text-gray-900 text-sm tracking-tight whitespace-nowrap">{lead.name}</span>
                       </div>
                     ) : col === 'email' ? (
-                      <span className="text-indigo-600 font-medium">{lead.email || '—'}</span>
-                    ) : col === 'handle' ? (
-                      <span className="text-purple-600 font-bold">{lead.handle || '—'}</span>
-                    ) : col === 'engagement' ? (
-                      <span className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded-md font-black text-[10px] uppercase">
-                        {lead.engagement || '—'}
-                      </span>
+                      <span className="text-[#1D4E89] font-medium text-sm hover:underline cursor-pointer whitespace-nowrap">{lead.email || '—'}</span>
                     ) : (
-                      <span className="text-gray-600 truncate max-w-[200px] block">{(lead as any)[col] || '—'}</span>
+                      <span className="text-gray-500 text-sm font-medium whitespace-nowrap">{(lead as any)[col] || '—'}</span>
                     )}
                   </td>
                 ))}
